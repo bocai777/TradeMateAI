@@ -110,7 +110,7 @@ with col2:
         5. 复制生成的邮件内容（纯文本）
         """)
 
-def render_signature():
+def render_signature_html():
     lines = []
     if sign_name: lines.append(sign_name)
     if sign_title: lines.append(sign_title)
@@ -118,6 +118,15 @@ def render_signature():
     if sign_phone: lines.append(sign_phone)
     if sign_email: lines.append(sign_email)
     return "<br>".join(lines)
+
+def render_signature_text():
+    lines = []
+    if sign_name: lines.append(sign_name)
+    if sign_title: lines.append(sign_title)
+    if sign_company: lines.append(sign_company)
+    if sign_phone: lines.append(sign_phone)
+    if sign_email: lines.append(sign_email)
+    return "\n".join(lines)
 
 if generate_button and prompt:
     with st.spinner("🤖 AI 正在撰写邮件..."):
@@ -134,21 +143,28 @@ if generate_button and prompt:
             )
             ai_body = response.choices[0].message.content
             # 合成最终邮件
-            mail = template
-            mail = mail.replace('[签名]', render_signature() or "")
-            mail = mail.replace('[公司]', sign_company or "")
-            mail = mail.replace('[职位]', sign_title or "")
-            mail = mail.replace('[电话]', sign_phone or "")
-            mail = mail.replace('[邮箱]', sign_email or "")
-            mail = mail.replace('[邮件正文内容]', ai_body or "")
+            mail_html = template
+            mail_text = template
+            mail_html = mail_html.replace('[签名]', render_signature_html() or "")
+            mail_text = mail_text.replace('[签名]', render_signature_text() or "")
+            mail_html = mail_html.replace('[公司]', sign_company or "")
+            mail_text = mail_text.replace('[公司]', sign_company or "")
+            mail_html = mail_html.replace('[职位]', sign_title or "")
+            mail_text = mail_text.replace('[职位]', sign_title or "")
+            mail_html = mail_html.replace('[电话]', sign_phone or "")
+            mail_text = mail_text.replace('[电话]', sign_phone or "")
+            mail_html = mail_html.replace('[邮箱]', sign_email or "")
+            mail_text = mail_text.replace('[邮箱]', sign_email or "")
+            mail_html = mail_html.replace('[邮件正文内容]', ai_body or "")
+            mail_text = mail_text.replace('[邮件正文内容]', ai_body or "")
             # 其他占位符留给用户手动填写
             st.success("✅ 邮件生成完成！")
             st.markdown("---")
             
             # 显示生成的邮件
             st.subheader("📧 生成的英文邮件")
-            st.markdown(mail, unsafe_allow_html=True)
-            st.text_area("纯文本邮件内容（可复制）", mail, height=400, key="generated_email")
+            st.markdown(mail_html, unsafe_allow_html=True)
+            st.text_area("纯文本邮件内容（可复制）", mail_text, height=400, key="generated_email")
             
             # 操作按钮
             col1, col2, col3 = st.columns(3)
