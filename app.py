@@ -58,8 +58,6 @@ with st.sidebar:
         ["正式", "友好", "紧急", "礼貌", "专业"]
     )
     
-    st.header("🏢 公司Logo设置")
-    logo_url = st.text_input("公司Logo URL（可选）", value="")
     
     st.header("✍️ 签名设置")
     sign_name = st.text_input("姓名", value="")
@@ -69,8 +67,8 @@ with st.sidebar:
     sign_email = st.text_input("邮箱", value="")
     
     # 模板内容
-    default_template = '''Subject: [邮件标题]\n\n[LOGO]\n\nDear [收件人姓名],\n\n[邮件正文内容]\n\nBest regards,\n[签名]'''
-    company_template = '''Subject: [邮件标题]\n\n[LOGO]\n\nDear [收件人姓名],\n\n[邮件正文内容]\n\nSincerely,\n[签名]\n[公司] | [职位] | [电话] | [邮箱]'''
+    default_template = '''Subject: [邮件标题]\n\nDear [收件人姓名],\n\n[邮件正文内容]\n\nBest regards,\n[签名]'''
+    company_template = '''Subject: [邮件标题]\n\nDear [收件人姓名],\n\n[邮件正文内容]\n\nSincerely,\n[签名]\n[公司] | [职位] | [电话] | [邮箱]'''
     if email_type == "自定义模板":
         custom_template = st.text_area("自定义模板内容", value=default_template, height=180)
         template = custom_template
@@ -80,7 +78,7 @@ with st.sidebar:
         template = default_template
     
     # 预览
-    preview = template.replace('[LOGO]', '(公司Logo)').replace('[签名]', '(签名)').replace('[公司]', '(公司)').replace('[职位]', '(职位)').replace('[电话]', '(电话)').replace('[邮箱]', '(邮箱)').replace('[邮件正文内容]', '(正文)').replace('[邮件标题]', '(标题)').replace('[收件人姓名]', '(收件人)')
+    preview = template.replace('[签名]', '(签名)').replace('[公司]', '(公司)').replace('[职位]', '(职位)').replace('[电话]', '(电话)').replace('[邮箱]', '(邮箱)').replace('[邮件正文内容]', '(正文)').replace('[邮件标题]', '(标题)').replace('[收件人姓名]', '(收件人)')
     st.header("📋 邮件模板预览")
     st.text_area("模板格式", preview, height=200, disabled=True)
 
@@ -99,16 +97,11 @@ with col2:
         st.info("""
         **使用步骤：**
         1. 选择邮件类型和语气
-        2. 设置Logo和签名
+        2. 设置签名
         3. 输入中文意图
         4. 点击生成按钮
-        5. 复制生成的邮件内容
+        5. 复制生成的邮件内容（纯文本）
         """)
-
-def render_logo(logo_url):
-    if logo_url:
-        return f'<img src="{logo_url}" width="120">\n'
-    return ''
 
 def render_signature():
     lines = []
@@ -135,7 +128,6 @@ if generate_button and prompt:
             ai_body = response.choices[0].message.content
             # 合成最终邮件
             mail = template
-            mail = mail.replace('[LOGO]', render_logo(logo_url) or "")
             mail = mail.replace('[签名]', render_signature() or "")
             mail = mail.replace('[公司]', sign_company or "")
             mail = mail.replace('[职位]', sign_title or "")
