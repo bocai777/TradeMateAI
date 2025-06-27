@@ -50,7 +50,7 @@ with st.sidebar:
     st.header("📧 邮件配置")
     email_type = st.selectbox(
         "邮件类型",
-        ["商务邮件", "询价邮件", "报价邮件", "催款邮件", "感谢邮件", "投诉处理", "其他"]
+        ["标准模板", "公司模板A", "自定义模板"]
     )
     
     tone = st.selectbox(
@@ -58,27 +58,31 @@ with st.sidebar:
         ["正式", "友好", "紧急", "礼貌", "专业"]
     )
     
-    # 显示邮件模板预览
+    st.header("🏢 公司Logo设置")
+    logo_url = st.text_input("公司Logo URL（可选）", value="")
+    
+    st.header("✍️ 签名设置")
+    sign_name = st.text_input("姓名", value="")
+    sign_title = st.text_input("职位", value="")
+    sign_company = st.text_input("公司", value="")
+    sign_phone = st.text_input("电话", value="")
+    sign_email = st.text_input("邮箱", value="")
+    
+    # 模板内容
+    default_template = '''Subject: [邮件标题]\n\n[LOGO]\n\nDear [收件人姓名],\n\n[邮件正文内容]\n\nBest regards,\n[签名]'''
+    company_template = '''Subject: [邮件标题]\n\n[LOGO]\n\nDear [收件人姓名],\n\n[邮件正文内容]\n\nSincerely,\n[签名]\n[公司] | [职位] | [电话] | [邮箱]'''
+    if email_type == "自定义模板":
+        custom_template = st.text_area("自定义模板内容", value=default_template, height=180)
+        template = custom_template
+    elif email_type == "公司模板A":
+        template = company_template
+    else:
+        template = default_template
+    
+    # 预览
+    preview = template.replace('[LOGO]', '(公司Logo)').replace('[签名]', '(签名)').replace('[公司]', '(公司)').replace('[职位]', '(职位)').replace('[电话]', '(电话)').replace('[邮箱]', '(邮箱)').replace('[邮件正文内容]', '(正文)').replace('[邮件标题]', '(标题)').replace('[收件人姓名]', '(收件人)')
     st.header("📋 邮件模板预览")
-    template_preview = f"""
-Subject: [邮件标题]
-
-From: [发件人邮箱]
-To: [收件人邮箱]
-Cc: [抄送邮箱] (可选)
-
-Dear [收件人姓名],
-
-[邮件正文内容]
-
-Best regards,
-[发件人姓名]
-[公司名称]
-[职位]
-[联系电话]
-[邮箱地址]
-    """
-    st.text_area("模板格式", template_preview, height=200, disabled=True)
+    st.text_area("模板格式", preview, height=200, disabled=True)
 
 # 主界面
 st.markdown("---")
@@ -95,41 +99,31 @@ with col2:
         st.info("""
         **使用步骤：**
         1. 选择邮件类型和语气
-        2. 输入中文意图
-        3. 点击生成按钮
-        4. 复制生成的邮件内容
+        2. 设置Logo和签名
+        3. 输入中文意图
+        4. 点击生成按钮
+        5. 复制生成的邮件内容
         """)
+
+def render_logo(logo_url):
+    if logo_url:
+        return f'<img src="{logo_url}" width="120">\n'
+    return ''
+
+def render_signature():
+    lines = []
+    if sign_name: lines.append(sign_name)
+    if sign_title: lines.append(sign_title)
+    if sign_company: lines.append(sign_company)
+    if sign_phone: lines.append(sign_phone)
+    if sign_email: lines.append(sign_email)
+    return "<br>".join(lines)
 
 if generate_button and prompt:
     with st.spinner("🤖 AI 正在撰写邮件..."):
         try:
-            system_prompt = f"""你是一个擅长英文商务沟通的外贸助理。请按照以下格式生成{email_type}，语气{tone}：
-
-Subject: [邮件标题]
-
-From: [发件人邮箱]
-To: [收件人邮箱]
-Cc: [抄送邮箱] (可选)
-
-Dear [收件人姓名],
-
-[邮件正文内容]
-
-Best regards,
-[发件人姓名]
-[公司名称]
-[职位]
-[联系电话]
-[邮箱地址]
-
-注意：
-1. 所有需要填写的地方都用中文标注，如 [邮件标题]、[收件人姓名]、[发件人姓名] 等
-2. 邮件正文要专业、{tone}、符合商务礼仪
-3. 根据用户的中文意图生成相应的英文邮件内容
-4. 如果是询价邮件，要包含产品规格、数量、交货期等关键信息
-5. 如果是报价邮件，要包含价格、付款条件、交货期等
-6. 如果是催款邮件，要委婉但明确地表达催款意图"""
-
+            # 生成AI邮件正文
+            system_prompt = f"你是一个擅长英文商务沟通的外贸助理。请根据用户意图生成英文邮件正文，语气{tone}。正文不包含称呼和结尾签名。"
             response = client.chat.completions.create(
                 model="deepseek-chat",
                 messages=[
@@ -138,14 +132,24 @@ Best regards,
                 ],
                 temperature=0.7
             )
-            message = response.choices[0].message.content
-            
+            ai_body = response.choices[0].message.content
+            # 合成最终邮件
+            mail = template
+            mail = mail.replace('[LOGO]', render_logo(logo_url) or "")
+            mail = mail.replace('[签名]', render_signature() or "")
+            mail = mail.replace('[公司]', sign_company or "")
+            mail = mail.replace('[职位]', sign_title or "")
+            mail = mail.replace('[电话]', sign_phone or "")
+            mail = mail.replace('[邮箱]', sign_email or "")
+            mail = mail.replace('[邮件正文内容]', ai_body or "")
+            # 其他占位符留给用户手动填写
             st.success("✅ 邮件生成完成！")
             st.markdown("---")
             
             # 显示生成的邮件
             st.subheader("📧 生成的英文邮件")
-            st.text_area("邮件内容", message, height=400, key="generated_email")
+            st.markdown(mail, unsafe_allow_html=True)
+            st.text_area("纯文本邮件内容（可复制）", mail, height=400, key="generated_email")
             
             # 操作按钮
             col1, col2, col3 = st.columns(3)
@@ -161,7 +165,7 @@ Best regards,
             with col3:
                 if st.button("💾 保存模板", type="secondary"):
                     st.write("💾 邮件模板已保存")
-                    
+            
         except Exception as e:
             st.error(f"❌ 生成邮件时出错：{e}")
             st.info("💡 请检查网络连接和API密钥是否正确")
