@@ -1,6 +1,7 @@
 import streamlit as st
 from openai import OpenAI
 import os
+import re
 
 # 页面配置
 st.set_page_config(
@@ -10,13 +11,27 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# 从环境变量获取API密钥
-api_key = os.getenv("DEEPSEEK_API_KEY", "sk-b2b0f44d0066493b9b8ce1ac007447c3")
+# 安全的API密钥获取
+def get_api_key():
+    """安全获取API密钥"""
+    api_key = os.getenv("DEEPSEEK_API_KEY")
+    
+    # 检查密钥格式
+    if not api_key:
+        st.error("⚠️ 未设置DEEPSEEK_API_KEY环境变量")
+        st.info("请在Streamlit Cloud的Settings → Secrets中设置API密钥")
+        st.stop()
+    
+    # 验证密钥格式（DeepSeek密钥通常以sk-开头）
+    if not api_key.startswith("sk-"):
+        st.error("⚠️ API密钥格式不正确")
+        st.info("请检查API密钥是否正确")
+        st.stop()
+    
+    return api_key
 
-# 检查API密钥
-if not api_key or api_key == "sk-b2b0f44d0066493b9b8ce1ac007447c3":
-    st.error("⚠️ 请设置正确的DEEPSEEK_API_KEY环境变量")
-    st.stop()
+# 获取API密钥
+api_key = get_api_key()
 
 # 初始化OpenAI客户端
 try:
@@ -25,7 +40,7 @@ try:
         base_url="https://api.deepseek.com/v1"
     )
 except Exception as e:
-    st.error(f"初始化API客户端失败：{e}")
+    st.error(f"❌ 初始化API客户端失败：{e}")
     st.stop()
 
 st.title("💼 TradeMate AI - 外贸邮件助手")
@@ -158,4 +173,4 @@ st.markdown("""
     <p>💼 TradeMate AI - 外贸邮件助手 | 让外贸沟通更简单</p>
     <p>Powered by DeepSeek AI & Streamlit</p>
 </div>
-""", unsafe_allow_html=True)
+""", unsafe_allow_html=True) 
