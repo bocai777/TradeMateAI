@@ -131,20 +131,34 @@ def render_signature_text():
 if generate_button and prompt:
     with st.spinner("🤖 AI 正在撰写邮件..."):
         try:
-            # 生成AI邮件正文
-            system_prompt = f"你是一个擅长英文商务沟通的外贸助理。请根据用户意图生成英文邮件正文，语气{tone}。正文不包含称呼和结尾签名。"
+            # 让AI同时生成标题和正文
+            system_prompt = (
+                "你是一个擅长英文商务沟通的外贸助理。请根据用户意图，生成一封英文商务邮件，包括合适的英文邮件标题（Subject）和正文，格式如下：\n"
+                "Subject: ...\n\n正文内容...。不要输出多余内容。"
+            )
+            user_prompt = f"请帮我写一封英文商务邮件，意图是：{prompt}，请给出合适的英文邮件标题和正文。"
             response = client.chat.completions.create(
                 model="deepseek-chat",
                 messages=[
                     {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": f"请帮我写一封英文商务邮件，意图是：{prompt}"}
+                    {"role": "user", "content": user_prompt}
                 ],
                 temperature=0.7
             )
-            ai_body = response.choices[0].message.content
+            ai_content = response.choices[0].message.content or ""
+            # 解析标题和正文
+            subject = ""
+            body = ai_content
+            if isinstance(ai_content, str):
+                match = re.match(r"Subject:\s*(.*)\n+([\s\S]*)", ai_content)
+                if match:
+                    subject = match.group(1).strip()
+                    body = match.group(2).strip()
             # 合成最终邮件
             mail_html = template
             mail_text = template
+            mail_html = mail_html.replace('[邮件标题]', subject)
+            mail_text = mail_text.replace('[邮件标题]', subject)
             mail_html = mail_html.replace('[签名]', render_signature_html() or "")
             mail_text = mail_text.replace('[签名]', render_signature_text() or "")
             mail_html = mail_html.replace('[公司]', sign_company or "")
@@ -155,32 +169,25 @@ if generate_button and prompt:
             mail_text = mail_text.replace('[电话]', sign_phone or "")
             mail_html = mail_html.replace('[邮箱]', sign_email or "")
             mail_text = mail_text.replace('[邮箱]', sign_email or "")
-            mail_html = mail_html.replace('[邮件正文内容]', ai_body or "")
-            mail_text = mail_text.replace('[邮件正文内容]', ai_body or "")
+            mail_html = mail_html.replace('[邮件正文内容]', body or "")
+            mail_text = mail_text.replace('[邮件正文内容]', body or "")
             # 其他占位符留给用户手动填写
             st.success("✅ 邮件生成完成！")
             st.markdown("---")
-            
-            # 显示生成的邮件
             st.subheader("📧 生成的英文邮件")
             st.markdown(mail_html, unsafe_allow_html=True)
             st.text_area("纯文本邮件内容（可复制）", mail_text, height=400, key="generated_email")
-            
-            # 操作按钮
             col1, col2, col3 = st.columns(3)
             with col1:
                 if st.button("📋 复制邮件内容", type="secondary"):
                     st.write("✅ 邮件内容已复制到剪贴板")
                     st.session_state.copied = True
-            
             with col2:
                 if st.button("🔄 重新生成", type="secondary"):
                     st.rerun()
-                    
             with col3:
                 if st.button("💾 保存模板", type="secondary"):
                     st.write("💾 邮件模板已保存")
-            
         except Exception as e:
             st.error(f"❌ 生成邮件时出错：{e}")
             st.info("💡 请检查网络连接和API密钥是否正确")
