@@ -75,7 +75,7 @@ with st.sidebar:
     
     # 模板内容
     default_template = '''Subject: [邮件标题]\n\nDear [收件人姓名],\n\n[邮件正文内容]\n\nBest regards,\n[签名]'''
-    company_template = '''Subject: [邮件标题]\n\nDear [收件人姓名],\n\n[邮件正文内容]\n\nSincerely,\n[签名]\n[公司] | [职位] | [电话] | [邮箱]'''
+    company_template = '''Subject: [邮件标题]\n\nDear [收件人姓名],\n\n[邮件正文内容]\n\nSincerely,\n[签名]'''
     if email_type == "自定义模板":
         custom_template = st.text_area("自定义模板内容", value=default_template, height=180)
         template = custom_template
