@@ -60,11 +60,18 @@ with st.sidebar:
     
     
     st.header("✍️ 签名设置")
-    sign_name = st.text_input("姓名", value="")
-    sign_title = st.text_input("职位", value="")
-    sign_company = st.text_input("公司", value="")
-    sign_phone = st.text_input("电话", value="")
-    sign_email = st.text_input("邮箱", value="")
+    if email_type == "标准模板":
+        sign_name = st.text_input("姓名", value="")
+        sign_title = ""
+        sign_company = ""
+        sign_phone = ""
+        sign_email = ""
+    else:
+        sign_name = st.text_input("姓名", value="")
+        sign_title = st.text_input("职位", value="")
+        sign_company = st.text_input("公司", value="")
+        sign_phone = st.text_input("电话", value="")
+        sign_email = st.text_input("邮箱", value="")
     
     # 模板内容
     default_template = '''Subject: [邮件标题]\n\nDear [收件人姓名],\n\n[邮件正文内容]\n\nBest regards,\n[签名]'''
